@@ -58,18 +58,47 @@ app.get('/fetchReviews/dealer/:id', async (req, res) => {
 
 // Express route to fetch all dealerships
 app.get('/fetchDealers', async (req, res) => {
-//Write your code here
-});
-
+    try {
+      const dealers = await Dealerships.find(); // Fetch all dealerships
+      res.status(200).json(dealers); // Send the list of dealers as JSON
+    } catch (error) {
+      console.error('Error fetching dealerships:', error);
+      res.status(500).json({ error: 'Failed to fetch dealerships' });
+    }
+  });
+  
 // Express route to fetch Dealers by a particular state
 app.get('/fetchDealers/:state', async (req, res) => {
-//Write your code here
+const { state } = req.params; // Extract state from the route parameter
+try {
+    const dealersByState = await Dealerships.find({ state: state }); // Filter dealerships by state
+    if (dealersByState.length > 0) {
+    res.status(200).json(dealersByState);
+    } else {
+    res.status(404).json({ message: 'No dealerships found for the specified state' });
+    }
+} catch (error) {
+    console.error(`Error fetching dealerships for state ${state}:`, error);
+    res.status(500).json({ error: 'Failed to fetch dealerships by state' });
+}
 });
-
-// Express route to fetch dealer by a particular id
+  
+  // Express route to fetch dealer by a particular id
 app.get('/fetchDealer/:id', async (req, res) => {
-//Write your code here
-});
+    const { id } = req.params; // Extract id from the route parameter
+    try {
+      const dealer = await Dealerships.findOne({ id: Number(id) }); // Find dealership by custom id field
+      if (dealer) {
+        res.status(200).json(dealer);
+      } else {
+        res.status(404).json({ message: 'Dealership not found' });
+      }
+    } catch (error) {
+      console.error(`Error fetching dealership with ID ${id}:`, error);
+      res.status(500).json({ error: 'Failed to fetch dealership by ID' });
+    }
+  });
+  
 
 //Express route to insert review
 app.post('/insert_review', express.raw({ type: '*/*' }), async (req, res) => {
