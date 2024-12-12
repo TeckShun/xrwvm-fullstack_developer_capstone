@@ -93,26 +93,43 @@ def get_cars(request):
 
 #Update the `get_dealerships` render list of dealerships all by default, particular state if state is passed
 def get_dealerships(request, state="All"):
-    if(state == "All"):
+    if state == "All":
         endpoint = "/fetchDealers"
     else:
-        endpoint = "/fetchDealers/"+state
+        endpoint = f"/fetchDealers/{state}"
+
     dealerships = get_request(endpoint)
-    return JsonResponse({"status":200,"dealers":dealerships})
+
+    if not dealerships or not isinstance(dealerships, list):
+        return JsonResponse({"status": 404, "message": "No dealerships found"})
+
+    return JsonResponse({"status": 200, "dealers": dealerships})
+
 
 # Create a `get_dealer_reviews` view to render the reviews of a dealer
 def get_dealer_reviews(request, dealer_id):
-    # if dealer id has been provided
-    if(dealer_id):
-        endpoint = "/fetchReviews/dealer/"+str(dealer_id)
+    # If dealer_id is provided
+    if dealer_id:
+        endpoint = "/fetchReviews/dealer/" + str(dealer_id)
         reviews = get_request(endpoint)
-        for review_detail in reviews:
-            response = analyze_review_sentiments(review_detail['review'])
-            print(response)
-            review_detail['sentiment'] = response['sentiment']
-        return JsonResponse({"status":200,"reviews":reviews})
+        
+        if reviews:  # Ensure reviews is not None or empty
+            for review_detail in reviews:
+                response = analyze_review_sentiments(review_detail.get('review', ''))
+                print("Sentiment analysis response:", response)
+                
+                # Handle None or unexpected response
+                if response and 'sentiment' in response:
+                    review_detail['sentiment'] = response['sentiment']
+                else:
+                    review_detail['sentiment'] = 'Unknown'  # Default value
+                
+            return JsonResponse({"status": 200, "reviews": reviews})
+        else:
+            return JsonResponse({"status": 404, "message": "No reviews found"})
     else:
-        return JsonResponse({"status":400,"message":"Bad Request"})
+        return JsonResponse({"status": 400, "message": "Bad Request"})
+
 
 
 # Create a `get_dealer_details` view to render the dealer details
@@ -126,12 +143,18 @@ def get_dealer_details(request, dealer_id):
 
 # Create a `add_review` view to submit a review
 def add_review(request):
-    if(request.user.is_anonymous == False):
+    # Option 1: Allow anonymous users to post reviews
+    if request.method == 'POST':
         data = json.loads(request.body)
         try:
+            # If the user is logged in, you can optionally attach their info to the review
+            user_name = request.user.username if not request.user.is_anonymous else "Anonymous"
+            data['user_name'] = user_name  # Optional: Attach user info to the review if needed
+
+            # Call the function to handle review posting (e.g., save to the database)
             response = post_review(data)
-            return JsonResponse({"status":200})
-        except:
-            return JsonResponse({"status":401,"message":"Error in posting review"})
+            return JsonResponse({"status": 200, "message": "Review posted successfully"})
+        except Exception as e:
+            return JsonResponse({"status": 500, "message": f"Error in posting review: {str(e)}"})
     else:
-        return JsonResponse({"status":403,"message":"Unauthorized"})
+        return JsonResponse({"status": 405, "message": "Method Not Allowed"})
