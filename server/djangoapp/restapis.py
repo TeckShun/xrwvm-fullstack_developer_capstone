@@ -3,15 +3,13 @@
 import os
 from dotenv import load_dotenv
 import requests
-import json
 
 load_dotenv()
 
-backend_url = os.getenv(
-    'backend_url', default="http://localhost:3030")
+backend_url = os.getenv("backend_url", default="http://localhost:3030")
 sentiment_analyzer_url = os.getenv(
-    'sentiment_analyzer_url',
-    default="http://localhost:5050/")
+    "sentiment_analyzer_url", default="http://localhost:5050/"
+)
 
 
 def get_request(endpoint, **kwargs):
@@ -35,7 +33,7 @@ def get_request(endpoint, **kwargs):
 
 
 def analyze_review_sentiments(text):
-    request_url = sentiment_analyzer_url+"analyze/"+text
+    request_url = sentiment_analyzer_url + "analyze/" + text
     try:
         # Call get method of requests library with URL and parameters
         response = requests.get(request_url)
@@ -44,12 +42,13 @@ def analyze_review_sentiments(text):
         print(f"Unexpected {err=}, {type(err)=}")
         print("Network exception occurred")
 
+
 # Add code for posting review
 def post_review(data_dict):
     request_url = backend_url + "/insert_review"
     try:
         response = requests.post(request_url, json=data_dict)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()
         response_data = response.json()
 
         # Ensure the backend response contains a status field
@@ -61,4 +60,7 @@ def post_review(data_dict):
             return {"status": 500, "message": "Failed to post review"}
     except requests.exceptions.RequestException as e:
         print("Network exception occurred:", e)
-        return {"status": 500, "message": "Network error while submitting review"}
+        return {
+                "status": 500,
+                "message": "Network error while submitting review"
+               }
